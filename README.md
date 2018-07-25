@@ -24,3 +24,5 @@ grainVolume, nContact, grainSurfaceArea.
 
 After computing grain properties. The distribution can be computed using computeHistFB.m, computeHistPC.m, or computeHistVB.m. The inputs should be matrix of diameter which is the result from computeGrainDiameter.m.
 
+## Published Research Studies using computeGSD.m
+The publication is in submission.
