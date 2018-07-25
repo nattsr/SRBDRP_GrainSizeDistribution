@@ -25,4 +25,6 @@ grainVolume, nContact, grainSurfaceArea.
 After computing grain properties. The distribution can be computed using computeHistFB.m, computeHistPC.m, or computeHistVB.m. The inputs should be matrix of diameter which is the result from computeGrainDiameter.m.
 
 ## Published Research Studies using computeGSD.m
-The publication is in submission.
+The publication is in submission. In the meantime, please make a citation to 
+
+Srisutthiyakorn, N. (2018). Computational Analysis of Fluid Flow in 2D&3D Pore Geometry. Ph.D Dissertation. Stanford University. https://searchworks.stanford.edu/view/12684954
