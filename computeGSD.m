@@ -1,29 +1,29 @@
 function [ grainCentroid, grainRadius, grainAzimuth, grainInclination, ...
            grainVolume, nContact, grainSurfaceArea ] ...
     = computeGSD( image, minThres, bc, qcPlot )
-%computeGSD compute grain size distribution 
+%computeGSD compute grain size distribution
 %   Input Arguments
-%   - image      : an (nx*ny) or (nx*ny*nz) uint8 matrix, 2-D or 3-D binary 
+%   - image      : an (nx*ny) or (nx*ny*nz) uint8 matrix, 2-D or 3-D binary
 %                  image of porespace (1 = grain, 0 = pore)
-%   - minThres   : an integer, a threshold to suppress all minima in the 
+%   - minThres   : an integer, a threshold to suppress all minima in the
 %                  intensity image whose depth is less than this number
 %   - bc         : an integer, boundary condition
-%                  0: impose no boundary condition 
-%                  1: remove grains that are close to the boundary 
+%                  0: impose no boundary condition
+%                  1: remove grains that are close to the boundary
 %   - qcPlot     : an integer, plot the QC image
 %                  1: show plot
 %
 %   Output Arguments
-%   - grainCentroid    : a (nGrain*2) or (nGrain*3) integer matrix, xy or xyz 
+%   - grainCentroid    : a (nGrain*2) or (nGrain*3) integer matrix, xy or xyz
 %                        location of the grain in voxel
 %   - grainRadius      : a (nGrain*4) or (nGrain*6) double matrix, radius
-%                        of each grain in voxel. The vector is based on the 
-%                        principal component analysis 
+%                        of each grain in voxel. The vector is based on the
+%                        principal component analysis
 %   - grainAzimuth     : a (nGrain*4) or (nGrain*6) double matrix,
-%                        azimuth on each axis of radius based on 
+%                        azimuth on each axis of radius based on
 %                        spherical cooridnate (ISO physics).
 %   - grainInclination : (For 3D), a (nGrain*6) double matrix,
-%                        inclination on each axis of radius based on 
+%                        inclination on each axis of radius based on
 %                        spherical cooridnate (ISO physics).
 %   - grainVolume      : a (nGrain*1) vector, the volume of grain in voxel
 %   - nContact         : a (nGrain*1) vector, the number of contact of each
@@ -69,7 +69,7 @@ imageGrainIdx = watershed(imageDistGrain);
 % QC pore (component 0 is boundary and now pore)
 imageGrainIdx(~image) = 0;
 
-% Find region properties (100+ s for 1024^3 voxels) 
+% Find region properties (100+ s for 1024^3 voxels)
 disp('Step 3: Find center of mass and volume')
 stats       = regionprops('table', imageGrainIdx, 'Centroid', 'Area');
 componentNo = unique(imageGrainIdx);
@@ -116,18 +116,18 @@ if qcPlot
         subplot(1,3,3)
         imagesc(imageGrainIdx)
         title('Measurement')
-        axis equal; xlim([0 imSize(2)]); ylim([0 imSize(1)]);  
+        axis equal; xlim([0 imSize(2)]); ylim([0 imSize(1)]);
     elseif imSize(3) > 1  % 3D---------------------------------------------
         figure
         colors = jet(nGrain);
-        colors = colors(randperm(length(colors)),:); % Randomize the color 
-        
+        colors = colors(randperm(length(colors)),:); % Randomize the color
+
         for iGrain = 1:nGrain
             idxSingleGrain  = (imageGrainIdx(:) == grainNo(iGrain));
             imageGrain      = zeros(nTotalSize,1);
             imageGrain(idxSingleGrain) = 1;
             imageGrain      = reshape(imageGrain,[imSize(1), imSize(2), imSize(3)]);
-            
+
             fv = isosurface(imageGrain,0);
             patch(fv,'EdgeColor','none','facecolor',colors(iGrain,:));
             box on;
@@ -136,9 +136,9 @@ if qcPlot
             hold on
         end
     end
-end    
-    
- 
+end
+
+
 
 %% Find the surface area of each grain using the isosurface
 grainSurfaceArea = zeros(nGrain,1);
@@ -150,8 +150,8 @@ for iGrain = 1:nGrain
     end
     idxSingleGrain      = (imageGrainIdx(:) == grainNo(iGrain));
     imageGrain    = zeros(nTotalSize,1);
-    imageGrain(idxSingleGrain) = 1;  
-    
+    imageGrain(idxSingleGrain) = 1;
+
     if imSize(3) > 1
         imageGrain      = reshape(imageGrain,[imSize(1), imSize(2), imSize(3)]);
         % Extract the surface surface
@@ -160,7 +160,7 @@ for iGrain = 1:nGrain
         % verts = get(p, 'Vertices');
         % faces = get(p, 'Faces');
         % close all;
-        
+
         % Find the surface area
         vertices = fv.vertices;
         faces = fv.faces;
@@ -169,11 +169,11 @@ for iGrain = 1:nGrain
         c = cross(a, b, 2);
         grainSurfaceArea(iGrain) = 1/2 * sum(sqrt(sum(c.^2, 2)));
     end
-    
+
 end
 toc
 
-    
+
 
 %% Find the number of contact
 nContact = zeros(nGrain,1);
@@ -185,8 +185,8 @@ for iGrain = 1:nGrain
     end
     idxSingleGrain      = (imageGrainIdx(:) == grainNo(iGrain));
     imageGrain    = zeros(nTotalSize,1);
-    imageGrain(idxSingleGrain) = 1;  
-    
+    imageGrain(idxSingleGrain) = 1;
+
     if imSize(3) == 1
         imageGrain    = reshape(imageGrain,[imSize(1), imSize(2)]);
         % Dilate the grain first to get the outer boundary.
@@ -207,11 +207,11 @@ for iGrain = 1:nGrain
             grainBound  = bwboundaries(imageGrain(:,:,iz),'noholes');
             if length(grainBound) == 1
                 linearInd   = sub2ind([imSize(1),imSize(2)], grainBound{1}(:,1), grainBound{1}(:,2));
-                contactIdx  = [contactIdx; imageGrainIdx(linearInd)]; 
+                contactIdx  = [contactIdx; imageGrainIdx(linearInd)];
             end
-        end     
+        end
     end
-    
+
     % Find the unique index that is not 0 (the pore) and the itself.
     contactIdx  = unique(contactIdx);
     contactIdx  = contactIdx(contactIdx ~= 0);
@@ -221,7 +221,7 @@ end
 
 
 
-%% Measure the grain size    
+%% Measure the grain size
 for iGrain = 1:nGrain
     if iGrain/100 == round(iGrain/100)
     disp(['Step 6: Measure grain size (', num2str(iGrain),...
@@ -230,15 +230,15 @@ for iGrain = 1:nGrain
     idxSingleGrain      = (imageGrainIdx(:) == grainNo(iGrain));
     imageGrain    = zeros(nTotalSize,1);
     imageGrain(idxSingleGrain) = 1;
-    
-    
+
+
     if imSize(3) == 1 % 2D-------------------------------------------------
-        imageGrain    = reshape(imageGrain,[imSize(2), imSize(1)]);
+        imageGrain    = reshape(imageGrain,[imSize(1), imSize(2)]);
         [idxXX, idxYY] = find(imageGrainIdx == grainNo(iGrain));
-        
+
         % Obtain principal direction
         [coeff] = pca([idxXX idxYY]);
-        
+
         nVec = size(coeff,2);
         X0 = allGrainCentroid(iGrain,1);
         Y0 = allGrainCentroid(iGrain,2);
@@ -256,14 +256,14 @@ for iGrain = 1:nGrain
                 nL1    = ones(length(tempX1),1);
                 nL2    = ones(length(tempX2),1);
                 tempY1 = nL1.*round(b./a.*(tempX1-X0) + Y0);
-                tempY2 = nL2.*round(b./a.*(tempX2-X0) + Y0);    
+                tempY2 = nL2.*round(b./a.*(tempX2-X0) + Y0);
             elseif b > a
                 tempY1 = [Y0:imSize(1)]';
                 tempY2 = [Y0:-1:1]';
                 nL1    = ones(length(tempY1),1);
                 nL2    = ones(length(tempY2),1);
                 tempX1 = nL1.*round(a./b.*(tempY1-Y0) + X0);
-                tempX2 = nL2.*round(a./b.*(tempY2-Y0) + X0);        
+                tempX2 = nL2.*round(a./b.*(tempY2-Y0) + X0);
             end
 
             % Initialization of lines for measurement
@@ -302,7 +302,7 @@ for iGrain = 1:nGrain
             dY1 = tempY1(bound1) - tempY1(1);
             dX2 = tempX2(bound2) - tempX2(1);
             dY2 = tempY2(bound2) - tempY2(1);
-            
+
             % Compute 2 radius from PCA at a time
             grainRadius(iGrain,2.*(iVec-1) + 1) ...
                 = sqrt(dX1^2 + dY1^2);
@@ -313,18 +313,18 @@ for iGrain = 1:nGrain
                 = atan(dX1/dY1)*180/pi;
             grainAzimuth(iGrain,2.*(iVec-1) + 2) ...
                 = atan(dX2/dY2)*180/pi;
-            
+
             if qcPlot
-                if imSize(3) == 1 
+                if imSize(3) == 1
                 hold on
                 plot(tempX1(1:bound1),tempY1(1:bound1),'r','LineWidth',2)
                 plot(tempX2(1:bound2),tempY2(1:bound2),'r','LineWidth',2)
                 end
             end
-            
+
         end
-    
-        
+
+
     elseif imSize(3) > 1 % 3D----------------------------------------------
         imageGrain    ...
             = reshape(imageGrain,[imSize(1), imSize(2), imSize(3)]);
@@ -357,27 +357,27 @@ for iGrain = 1:nGrain
                 nL1    = ones(length(tempX1),1);
                 nL2    = ones(length(tempX2),1);
                 tempY1 = nL1.*round(b./a.*(tempX1-X0) + Y0);
-                tempY2 = nL2.*round(b./a.*(tempX2-X0) + Y0);    
+                tempY2 = nL2.*round(b./a.*(tempX2-X0) + Y0);
                 tempZ1 = nL1.*round(c./a.*(tempX1-X0) + Z0);
-                tempZ2 = nL2.*round(c./a.*(tempX2-X0) + Z0);   
+                tempZ2 = nL2.*round(c./a.*(tempX2-X0) + Z0);
             elseif idxMax == 2;
                 tempY1 = [Y0:imSize(2)]';
                 tempY2 = [Y0:-1:1]';
                 nL1    = ones(length(tempY1),1);
                 nL2    = ones(length(tempY2),1);
                 tempX1 = nL1.*round(a./b.*(tempY1-Y0) + X0);
-                tempX2 = nL2.*round(a./b.*(tempY2-Y0) + X0); 
+                tempX2 = nL2.*round(a./b.*(tempY2-Y0) + X0);
                 tempZ1 = nL1.*round(c./b.*(tempY1-Y0) + Z0);
-                tempZ2 = nL2.*round(c./b.*(tempY2-Y0) + Z0);             
+                tempZ2 = nL2.*round(c./b.*(tempY2-Y0) + Z0);
             elseif idxMax == 3;
                 tempZ1 = [Z0:imSize(3)]';
                 tempZ2 = [Z0:-1:1]';
                 nL1    = ones(length(tempZ1),1);
                 nL2    = ones(length(tempZ2),1);
                 tempX1 = nL1.*round(a./c.*(tempZ1-Z0) + X0);
-                tempX2 = nL2.*round(a./c.*(tempZ2-Z0) + X0); 
+                tempX2 = nL2.*round(a./c.*(tempZ2-Z0) + X0);
                 tempY1 = nL1.*round(c./c.*(tempZ1-Z0) + Y0);
-                tempY2 = nL2.*round(c./c.*(tempZ2-Z0) + Y0);               
+                tempY2 = nL2.*round(c./c.*(tempZ2-Z0) + Y0);
             end
 
             % Initialization of lines for measurement
@@ -422,17 +422,17 @@ for iGrain = 1:nGrain
             dX2 = tempX2(bound2) - tempX2(1);
             dY2 = tempY2(bound2) - tempY2(1);
             dZ2 = tempZ2(bound2) - tempZ2(1);
-            
+
             grainRadius(iGrain,2.*(iVec-1) + 1) ...
                 = sqrt((dX1)^2 + (dY1)^2 + (dZ1)^2);
             grainRadius(iGrain,2.*(iVec-1) + 2) ...
                 = sqrt((dX2)^2 + (dY2)^2 + (dZ2)^2);
-                 
+
             grainAzimuth(iGrain,2.*(iVec-1) + 1) ...
                 = acos(dZ1/grainRadius(iGrain,2.*(iVec-1) + 1));
             grainAzimuth(iGrain,2.*(iVec-1) + 2) ...
                 = acos(dZ2/grainRadius(iGrain,2.*(iVec-1) + 2));
-            
+
             grainInclination(iGrain,2.*(iVec-1) + 1) ...
                 = atan(dY1/dX1)*180/pi;
             grainInclination(iGrain,2.*(iVec-1) + 2) ...
@@ -441,7 +441,7 @@ for iGrain = 1:nGrain
         end
     end
 end
-   
+
 
 
 %% Output
@@ -455,7 +455,7 @@ grainInclination    = grainInclination(idxNonZero,:);
 nContact            = nContact(idxNonZero,:);
 grainSurfaceArea    = grainSurfaceArea(idxNonZero,:);
 
-%% Boundary condition Exclude grains at the boundary 
+%% Boundary condition Exclude grains at the boundary
 if bc
     radius      = max(grainRadius,[],2);
     nGrain      = length(radius);
@@ -483,18 +483,18 @@ if bc
                 idxReject = [idxReject, iGrain];
             end
 
-        end    
+        end
 
     elseif imSize(3) > 1 %3D---------------------------------------------------
         % Define the corner points
-        corner = [1 1 1; 
-                  1 imSize(1) 1; 
-                  1 1 imSize(1); 
+        corner = [1 1 1;
+                  1 imSize(1) 1;
+                  1 1 imSize(1);
                   1 imSize(1) imSize(1);
-                  imSize(1) 1 1; 
-                  imSize(1) imSize(1) 1; 
-                  imSize(1) 1 imSize(1); 
-                  imSize(1) imSize(1) imSize(1)]; 
+                  imSize(1) 1 1;
+                  imSize(1) imSize(1) 1;
+                  imSize(1) 1 imSize(1);
+                  imSize(1) imSize(1) imSize(1)];
 
         % Define 6 different planes from corners point
         plane = [1 2 3;
@@ -503,7 +503,7 @@ if bc
                  2 4 6;
                  1 2 5;
                  5 6 7];
-        % Calculate the distance from a point to a line for each centroid      
+        % Calculate the distance from a point to a line for each centroid
         for iGrain = 1:nGrain
             point = grainCentroid(iGrain,:);
 
@@ -526,11 +526,11 @@ if bc
                 idxReject = [idxReject, iGrain];
             end
 
-        end    
+        end
 
     end
-    
-    % Screen the data to the number 
+
+    % Screen the data to the number
     grainRadius         = grainRadius(idxAccept,:);
     grainCentroid       = grainCentroid(idxAccept,:);
     grainVolume         = grainVolume(idxAccept,:);
@@ -538,15 +538,11 @@ if bc
     grainInclination    = grainInclination(idxAccept,:);
     nContact            = nContact(idxAccept,:);
     grainSurfaceArea    = grainSurfaceArea(idxAccept,:);
-    
-    
+
+
     if qcPlot
-        if imSize(3) == 1 
+        if imSize(3) == 1
         scatter(grainCentroid(:,1), grainCentroid(:,2),'go')
         end
     end
 end
-
-    
-
-
